@@ -1,0 +1,74 @@
+Here’s a practical guide and shell script to help you achieve this task on RHEL 7. You want to:
+
+Read a list of 1,000 IPs from an Excel sheet.
+
+Check if each IP is reachable (ping).
+
+Check if each IP allows SSH access.
+
+Output a report with headers "no, ip, is ping?, is ssh accessed".
+
+You’ll need to:
+
+Save your Excel file as a CSV (e.g., ips.csv), with one IP per row.
+
+Run a shell script that reads this file, pings each IP, attempts SSH (without login), and outputs the result.
+
+Step 1: Save Excel File as CSV
+Make sure your file (e.g., ips.csv) lists IPs in the first column, one per row.
+
+Example ips.csv content:
+
+text
+192.168.1.1
+10.0.0.4
+203.0.113.10
+Step 2: Shell Script
+Below is a Bash script for RHEL 7. It will generate a report called report.csv:
+
+bash
+#!/bin/bash
+
+input="ips.csv"
+output="report.csv"
+
+echo "no,ip,is_ping?,is_ssh_accessed" > "$output"
+no=1
+
+while IFS=, read -r ip
+do
+  # Check if IP is pingable (timeout: 2s, 1 packet)
+  ping -c 1 -W 2 "$ip" &>/dev/null
+  if [ $? -eq 0 ]; then
+    ping_status="Yes"
+  else
+    ping_status="No"
+  fi
+
+  # Check if port 22 (SSH) is open (timeout: 2s)
+  nc -z -w2 "$ip" 22 &>/dev/null
+  if [ $? -eq 0 ]; then
+    ssh_status="Yes"
+  else
+    ssh_status="No"
+  fi
+
+  echo "$no,$ip,$ping_status,$ssh_status" >> "$output"
+  no=$((no + 1))
+done < "$input"
+Step 3: Usage Instructions
+Install nc (netcat):
+
+text
+sudo yum install nc
+Save your IPs as ips.csv (one IP per row).
+
+Save the above script as check_ips.sh and give it execute permission:
+
+text
+chmod +x check_ips.sh
+Run the script:
+
+text
+./check_ips.sh
+After execution, report.csv will be generated with four columns: no, ip, is ping?, is ssh accessed.
