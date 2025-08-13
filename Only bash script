@@ -1,0 +1,29 @@
+#!/bin/bash
+
+input="ips.csv"
+output="report.csv"
+
+echo "no,ip,is_ping?,is_ssh_accessed" > "$output"
+no=1
+
+while IFS=, read -r ip
+do
+  # Check if IP is pingable (timeout: 2s, 1 packet)
+  ping -c 1 -W 2 "$ip" &>/dev/null
+  if [ $? -eq 0 ]; then
+    ping_status="Yes"
+  else
+    ping_status="No"
+  fi
+
+  # Check if port 22 (SSH) is open (timeout: 2s)
+  nc -z -w2 "$ip" 22 &>/dev/null
+  if [ $? -eq 0 ]; then
+    ssh_status="Yes"
+  else
+    ssh_status="No"
+  fi
+
+  echo "$no,$ip,$ping_status,$ssh_status" >> "$output"
+  no=$((no + 1))
+done < "$input"
